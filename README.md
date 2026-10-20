@@ -24,6 +24,7 @@ eunit/                 package Python (orchestrateur)
   engine.py            exécution
   runners/             host, sim, emu (Unicorn), jlink (pylink) + protocole mailbox
   report.py, plot.py   rapports
+  mcp_server.py        serveur MCP (assistants IA)
 target/                runtime C embarqué
   include/eunit.h      API, ABI des adapters, structure de la mailbox
   src/eunit_runtime.c  exécution par lots + serveur mailbox
@@ -184,6 +185,40 @@ La mailbox `eunit_mailbox` (adresse lue dans l'ELF) contient un en-tête de mots
 suivi du buffer d'échange. L'hôte écrit les entrées et `req = seq + 1` ; la cible exécute le lot,
 écrit les sorties puis `ack = req`. Les lots sont découpés selon la taille du buffer (`EUNIT_BUF_WORDS`).
 Le hash garantit que le firmware correspond à la spécification (sinon : erreur "rebuild it").
+
+## Serveur MCP (assistants IA)
+
+`python eunit_cli.py mcp` lance un serveur [MCP](https://modelcontextprotocol.io) sur stdio, sans
+dépendance supplémentaire. Un assistant (Claude Code, Claude Desktop, VS Code...) peut alors :
+
+| Outil | Rôle |
+|---|---|
+| `find_suites` | trouver les suites YAML sous un répertoire |
+| `describe_suite` | charger et valider une suite : fonctions, tests, exigences, vérifications, hash |
+| `build` | `make host`, `target`, les deux, ou `clean` ; renvoie la sortie du compilateur |
+| `run_suite` | compiler et exécuter sur `host`, `sim`, `emu` ou `target` (J-Link), filtre `tests`, graphes ; renvoie le verdict et le détail de chaque test (`results.json`) |
+| `add_test`, `get_test`, `update_test`, `remove_test` | écrire les tests d'une suite (ou du fichier inclus qui les définit) |
+| `add_function` | déclarer une fonction à tester, avec ses sources, includes et en-têtes |
+| `create_suite` | créer `<nom>.yaml` + `Makefile` d'une nouvelle suite, avec ses premiers tests |
+| `list_probes`, `license_status` | sondes J-Link connectées, licence du poste |
+
+Les modifications gardent le reste du fichier tel quel (commentaires, mise en page) et sont
+validées avant d'être écrites : chargement de la suite et des suites qui incluent le fichier,
+génération des stimuli du test. Une modification refusée laisse le fichier intact. `dry_run: true`
+renvoie le YAML produit sans rien écrire.
+
+Le README et les tutoriels sont exposés comme ressources (`eunit://docs/...`). Les builds et les
+exécutions passent par make et la CLI dans des processus fils, comme depuis un terminal : les
+rapports restent dans `build/report`. Les chemins relatifs partent du répertoire de travail du serveur.
+
+Dans ce dépôt, `.mcp.json` déclare le serveur pour Claude Code. Ailleurs :
+
+```
+claude mcp add e2unit -e EUNIT_MAKE=C:/Dev/Tools/make.exe -- python C:/chemin/e2Unit/eunit_cli.py mcp
+```
+
+`make` doit être dans le `PATH`, ou donné par la variable `EUNIT_MAKE`. Si aucune licence n'est encore
+choisie, la fenêtre de licence apparaît au premier `run_suite` (en CI : `EUNIT_LICENSE_KEY`).
 
 ## Autotests du framework
 

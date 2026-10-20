@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "e2unit": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["eunit_cli.py", "mcp"],
+      "env": {
+        "EUNIT_MAKE": "${EUNIT_MAKE:-make}"
+      }
+    }
+  }
+}

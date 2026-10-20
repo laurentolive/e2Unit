@@ -165,6 +165,11 @@ def _cmd_license(a):
     return 0
 
 
+def _cmd_mcp(a):
+    from .mcp_server import serve
+    return serve()
+
+
 def _cmd_fs(a):
     """Portable file operations for the makefiles (cmd.exe or sh)."""
     for p in map(Path, a.paths):
@@ -236,6 +241,9 @@ def main(argv=None):
                         "this computer, check it online now, open the buy page or the customer portal")
     p.add_argument("key", nargs="?", help="Professional license key (activate)")
     p.set_defaults(fn=_cmd_license)
+
+    p = sub.add_parser("mcp", help="MCP server on stdio, for AI assistants (Claude Code, ...)")
+    p.set_defaults(fn=_cmd_mcp)
 
     p = sub.add_parser("fs", help=argparse.SUPPRESS)
     p.add_argument("op", choices=["mkdir", "rm"])
