@@ -188,7 +188,7 @@ Le hash garantit que le firmware correspond à la spécification (sinon : erreur
 
 ## Serveur MCP (assistants IA)
 
-`python eunit_cli.py mcp` lance un serveur [MCP](https://modelcontextprotocol.io) sur stdio, sans
+`python eunit_cli.py mcp --workspace <répertoire>` lance un serveur [MCP](https://modelcontextprotocol.io) sur stdio, sans
 dépendance supplémentaire. Un assistant (Claude Code, Claude Desktop, VS Code...) peut alors :
 
 | Outil | Rôle |
@@ -209,13 +209,32 @@ renvoie le YAML produit sans rien écrire.
 
 Le README et les tutoriels sont exposés comme ressources (`eunit://docs/...`). Les builds et les
 exécutions passent par make et la CLI dans des processus fils, comme depuis un terminal : les
-rapports restent dans `build/report`. Les chemins relatifs partent du répertoire de travail du serveur.
+rapports restent dans `build/report`.
 
-Dans ce dépôt, `.mcp.json` déclare le serveur pour Claude Code. Ailleurs :
+### Workspace
+
+e2Unit ne contient pas les données de l'utilisateur : le serveur travaille dans un **workspace**, un
+répertoire choisi par l'utilisateur et situé hors de l'arbre e2Unit, donné par `--workspace` ou, à
+défaut, par la variable `EUNIT_WORKSPACE`. Les chemins relatifs partent du workspace ; une suite, un
+fichier inclus modifié ou un répertoire de graphes hors du workspace, ou dans l'arbre e2Unit, est
+refusé. Sans workspace valide, le serveur démarre mais ses outils renvoient l'erreur à corriger.
+
+Depuis le projet de l'utilisateur :
 
 ```
-claude mcp add e2unit -e EUNIT_MAKE=C:/Dev/Tools/make.exe -- python C:/chemin/e2Unit/eunit_cli.py mcp
+claude mcp add e2unit -e EUNIT_MAKE=C:/Dev/Tools/make.exe -- python C:/chemin/e2Unit/eunit_cli.py mcp --workspace C:/chemin/projet/tests
 ```
+
+`--demo` initialise le workspace avec les exemples : il crée le répertoire si besoin et y copie
+`examples/` (sans les `build/`), avec des Makefiles qui pointent vers cette installation d'e2Unit. Une
+copie déjà présente est laissée telle quelle, l'option peut donc rester dans la configuration :
+
+```
+claude mcp add e2unit -- python C:/chemin/e2Unit/eunit_cli.py mcp --workspace C:/chemin/demo --demo
+```
+
+Dans ce dépôt, `.mcp.json` déclare le serveur pour Claude Code, avec le workspace pris dans
+`EUNIT_WORKSPACE`.
 
 `make` doit être dans le `PATH`, ou donné par la variable `EUNIT_MAKE`. Si aucune licence n'est encore
 choisie, la fenêtre de licence apparaît au premier `run_suite` (en CI : `EUNIT_LICENSE_KEY`).

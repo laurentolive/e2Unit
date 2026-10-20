@@ -167,7 +167,7 @@ def _cmd_license(a):
 
 def _cmd_mcp(a):
     from .mcp_server import serve
-    return serve()
+    return serve(workspace=a.workspace, demo=a.demo)
 
 
 def _cmd_fs(a):
@@ -243,6 +243,11 @@ def main(argv=None):
     p.set_defaults(fn=_cmd_license)
 
     p = sub.add_parser("mcp", help="MCP server on stdio, for AI assistants (Claude Code, ...)")
+    p.add_argument("--workspace", metavar="DIR",
+                   help="directory holding the user's suites, outside e2Unit (default: EUNIT_WORKSPACE)")
+    p.add_argument("--demo", action="store_true",
+                   help="create the workspace if needed and copy the examples to <workspace>/examples "
+                        "(kept if already there)")
     p.set_defaults(fn=_cmd_mcp)
 
     p = sub.add_parser("fs", help=argparse.SUPPRESS)

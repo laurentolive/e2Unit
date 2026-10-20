@@ -1,6 +1,6 @@
 """MCP server (Model Context Protocol, stdio transport): e2Unit for AI assistants.
 
-    python eunit_cli.py mcp
+    python eunit_cli.py mcp --workspace <directory>      (or EUNIT_WORKSPACE=<directory>)
 
 Tools: find and describe suites, build them, run them on host / sim / emu / target and get the
 verdicts, list J-Link probes, show the license. Resources: README and tutorials.
@@ -8,7 +8,9 @@ verdicts, list J-Link probes, show the license. Resources: README and tutorials.
 No dependency: JSON-RPC 2.0, one message per line on stdin/stdout. Builds and runs go through
 make and the CLI in child processes, as from a terminal: the shared libraries are never loaded
 in the server (they could not be rebuilt on Windows) and nothing but protocol reaches stdout.
-Relative paths are relative to the server working directory (the project of the client).
+The workspace is the user's directory: relative paths start from it, and every suite, report
+or plot the tools read or write must be inside it. The e2Unit tree holds no user data: paths
+inside it are refused, and so is a workspace inside it.
 """
 import json
 import os
@@ -35,6 +37,9 @@ RUNNERS = {
     "target": ("test-target", "{board}"),
 }
 
+WORKSPACE = None              # set by serve(): Path of the workspace, or the reason it is unusable
+DEMO = None                   # examples directory in the workspace (--demo)
+
 INSTRUCTIONS = f"""{PRODUCT_NAME} tests C functions on PC and on target from one YAML suite
 (prototype, stimuli, expected values, tolerances). A suite is a YAML file next to a 3-line
 Makefile. Workflow: find_suites -> describe_suite -> run_suite (runner host first, then sim,
@@ -47,8 +52,59 @@ The YAML format is documented in the resource eunit://docs/README.md and the tut
 # ----------------------------------------------------------------------------
 # Helpers
 
+def set_workspace(directory=None, create=False):
+    """Workspace from the argument, else EUNIT_WORKSPACE (created if asked). Returns it, or the
+    error message."""
+    global WORKSPACE
+    directory = directory or os.environ.get("EUNIT_WORKSPACE")
+    if not directory:
+        WORKSPACE = ("no workspace: start the server with --workspace <directory> or set "
+                     "EUNIT_WORKSPACE (the directory holding your suites, outside e2Unit)")
+    else:
+        w = Path(directory).expanduser().resolve()
+        if create and not w.exists() and not w.is_relative_to(ROOT):
+            w.mkdir(parents=True)
+        if not w.is_dir():
+            WORKSPACE = f"workspace {w}: no such directory"
+        elif w.is_relative_to(ROOT):
+            WORKSPACE = f"workspace {w} is inside e2Unit ({ROOT}), which holds no user data: choose another directory"
+        else:
+            WORKSPACE = w
+    return WORKSPACE
+
+
+def install_demo(workspace):
+    """Copy the e2Unit examples to <workspace>/examples, Makefiles pointing to this e2Unit. An
+    existing copy is kept as is (it may hold the user's changes). Returns the examples directory."""
+    dest = workspace / "examples"
+    if dest.exists():
+        return dest
+    shutil.copytree(ROOT / "examples", dest, ignore=shutil.ignore_patterns(*SKIP_DIRS))
+    for mk in dest.rglob("Makefile"):
+        lines = mk.read_text(encoding="utf-8").splitlines(keepends=True)
+        for i, line in enumerate(lines):
+            k, sep, _v = line.partition(":=")
+            if sep and k.strip() == "EUNIT_ROOT":
+                lines[i] = f"{k}{sep} {ROOT.as_posix()}\n"
+        mk.write_text("".join(lines), encoding="utf-8")
+    return dest
+
+
+def _workspace():
+    if not isinstance(WORKSPACE, Path):
+        raise EUnitError(WORKSPACE or "no workspace")
+    return WORKSPACE
+
+
 def _path(p):
-    return Path(p).expanduser().resolve()
+    """User path: relative to the workspace, which must contain it, outside the e2Unit tree."""
+    w = _workspace()
+    path = (w / Path(p).expanduser()).resolve()
+    if not path.is_relative_to(w):
+        raise EUnitError(f"{path} is outside the workspace {w}")
+    if path.is_relative_to(ROOT):
+        raise EUnitError(f"{path} is inside e2Unit ({ROOT}), which holds no user data")
+    return path
 
 
 def _suite_path(p):
@@ -130,7 +186,8 @@ def tool_find_suites(root=".", **_):
     root = _path(root)
     found = []
     for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = sorted(d for d in dirnames if d not in SKIP_DIRS and not d.startswith("."))
+        dirnames[:] = sorted(d for d in dirnames if d not in SKIP_DIRS and not d.startswith(".")
+                             and Path(dirpath, d).resolve() != ROOT)
         for f in sorted(filenames):
             p = Path(dirpath) / f
             if p.suffix in (".yaml", ".yml") and _is_suite(p):
@@ -230,14 +287,22 @@ def tool_add_test(suite, test, after=None, dry_run=False, **_):
     return _written(add_test(_suite_path(suite), test, after, dry_run), dry_run)
 
 
+def _test_file(suite, id):
+    """Suite path, after checking that the file defining the test (maybe included) is writable."""
+    from .specedit import locate_test
+    path = _suite_path(suite)
+    _path(locate_test(path, str(id)))
+    return path
+
+
 def tool_update_test(suite, id, test, dry_run=False, **_):
     from .specedit import update_test
-    return _written(update_test(_suite_path(suite), str(id), test, dry_run), dry_run)
+    return _written(update_test(_test_file(suite, id), str(id), test, dry_run), dry_run)
 
 
 def tool_remove_test(suite, id, dry_run=False, **_):
     from .specedit import remove_test
-    return _written(remove_test(_suite_path(suite), str(id), dry_run), dry_run)
+    return _written(remove_test(_test_file(suite, id), str(id), dry_run), dry_run)
 
 
 def _build_lists(sources=None, includes=None, headers=None, defines=None):
@@ -285,7 +350,7 @@ def tool_license_status(**_):
 
 
 _SUITE = {"type": "string", "description": "suite YAML file, or the directory holding it "
-                                           "(relative to the server working directory)"}
+                                           "(relative to the workspace)"}
 _BOARD = {"type": "string", "description": "board under boards/ (default: the Makefile one, ra4e1)"}
 _VARS = {"type": "object", "additionalProperties": {"type": "string"},
          "description": "extra make variables, e.g. {\"JLINK_OPTS\": \"--serial 123456\"}"}
@@ -336,7 +401,7 @@ TOOLS = {
     "find_suites": (tool_find_suites, True, {
         "description": "Find the e2Unit suites (YAML files with a 'suite' key) under a directory.",
         "inputSchema": {"type": "object", "properties": {
-            "root": {"type": "string", "description": "directory to search (default: working directory)"}}}}),
+            "root": {"type": "string", "description": "directory to search (default: the workspace)"}}}}),
     "describe_suite": (tool_describe_suite, True, {
         "description": "Load and validate a suite: functions (prototype, inputs, outputs), tests "
                        "(id, requirements, checks), sources, hash. Specification errors are reported.",
@@ -362,7 +427,7 @@ TOOLS = {
                       "description": "test ids or id prefixes to run (default: all)"},
             "board": _BOARD,
             "verbose": {"type": "boolean", "default": False, "description": "log every check"},
-            "plot": {"type": "string", "description": "directory for PNG plots of the failed checks"},
+            "plot": {"type": "string", "description": "directory for PNG plots of the failed checks (in the workspace)"},
             "plot_all": {"type": "boolean", "default": False, "description": "plot every check"},
             "details": {"type": "boolean", "default": False,
                         "description": "include the error statistics of every check"},
@@ -405,7 +470,7 @@ TOOLS = {
         "description": "Create a new suite: <directory>/<name>.yaml and its Makefile, with functions, "
                        "build lists and optionally first tests. Paths in the YAML are relative to it.",
         "inputSchema": {"type": "object", "properties": {
-            "directory": {"type": "string", "description": "directory of the suite (created if needed)"},
+            "directory": {"type": "string", "description": "directory of the suite, in the workspace (created if needed)"},
             "name": {"type": "string", "description": "suite name, also the YAML file name"},
             "description": {"type": "string"},
             "functions": {"type": "object", "description": "name -> prototype string or "
@@ -483,13 +548,20 @@ class _RpcError(Exception):
         self.code = code
 
 
+def _instructions():
+    if isinstance(WORKSPACE, Path):
+        demo = f" Examples to try first: {DEMO.relative_to(WORKSPACE).as_posix()}." if DEMO else ""
+        return f"{INSTRUCTIONS}\nWorkspace: {WORKSPACE} (relative paths start there).{demo}"
+    return f"{INSTRUCTIONS}\nNot usable until fixed: {WORKSPACE}."
+
+
 def _handle(method, params):
     if method == "initialize":
         asked = params.get("protocolVersion")
         return {"protocolVersion": asked if asked in PROTOCOL_VERSIONS else PROTOCOL_VERSIONS[0],
                 "capabilities": {"tools": {}, "resources": {}},
                 "serverInfo": {"name": "e2unit", "title": PRODUCT_NAME, "version": __version__},
-                "instructions": INSTRUCTIONS}
+                "instructions": _instructions()}
     if method == "ping":
         return {}
     if method == "tools/list":
@@ -505,7 +577,15 @@ def _handle(method, params):
     raise _RpcError(-32601, f"method not found: {method}")
 
 
-def serve(stdin=None, stdout=None):
+def serve(stdin=None, stdout=None, workspace=None, demo=False):
+    global DEMO
+    DEMO = None
+    set_workspace(workspace, create=demo)
+    if not isinstance(WORKSPACE, Path):
+        print(f"e2unit mcp: {WORKSPACE}", file=sys.stderr)
+    elif demo:
+        DEMO = install_demo(WORKSPACE)
+        print(f"e2unit mcp: examples in {DEMO}", file=sys.stderr)
     stdin = stdin or sys.stdin.buffer
     stdout = stdout or sys.stdout.buffer
     sys.stdout = sys.stderr            # a stray print must not corrupt the protocol
