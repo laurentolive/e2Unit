@@ -1,0 +1,38 @@
+# emath_mul_q15 - Q15 product, rounded and saturated
+suite: mulq15
+description: emath_mul_q15 accuracy and saturation
+
+build:
+  sources: [../../src/emath_mul.c]
+  includes: [../../src]
+  headers: [emath.h]
+
+functions:
+  mul:
+    prototype: "int16_t emath_mul_q15(int16_t a, int16_t b)"
+    returns: p
+
+tests:
+  - id: MUL-001
+    title: accuracy on a 257 x 257 grid
+    requirement: EMATH-MUL-01
+    call: mul
+    combine: grid
+    stimuli:
+      a: {linspace: [-32768, 32767, 257]}
+      b: {linspace: [-32768, 32767, 257]}
+    checks:
+      - desc: "|p - a b / 32768| <= 0.5 LSB, saturated to int16"
+        expect: "sat(a * b / 32768, 'int16_t')"
+        tolerance: {abs: 0.5}
+
+  - id: MUL-002
+    title: remarkable values
+    requirement: EMATH-MUL-02
+    call: mul
+    stimuli:
+      a: [16384, -16384, 32767, -32768, -32768, 0]
+      b: [16384, 16384, 32767, 32767, -32768, -32768]
+    checks:
+      - desc: 0.5 x 0.5, -0.5 x 0.5, max x max, -1 x max, -1 x -1 (saturated), 0 x -1
+        expect: [8192, -8192, 32766, -32767, 32767, 0]

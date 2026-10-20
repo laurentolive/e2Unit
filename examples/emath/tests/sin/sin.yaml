@@ -1,0 +1,53 @@
+# emath_sin - sine of a binary angle (one turn = 65536), Q15 result
+suite: sin
+description: emath_sin accuracy, remarkable values and symmetry
+
+build:
+  sources: [../../src/emath_sin.c]
+  includes: [../../src]
+  headers: [emath.h]
+
+models: [../emath_ref.py]
+
+functions:
+  sin:
+    prototype: "int16_t emath_sin(int16_t angle)"
+    returns: y
+
+tests:
+  - id: SIN-001
+    title: accuracy over the full turn
+    requirement: EMATH-SIN-01
+    description: every one of the 65536 angles is compared with the ideal sine
+    call: sin
+    stimuli:
+      angle: {range: [-32768, 32767]}
+    checks:
+      - desc: "|y - round(32767 sin(pi angle / 32768))| <= 2 LSB"
+        expect: sin_q15(angle)
+        tolerance: {abs: 2}
+      - desc: execution time
+        cycles: {max: 200}
+
+  - id: SIN-002
+    title: exact values on the axes
+    requirement: EMATH-SIN-02
+    call: sin
+    stimuli:
+      angle: [0, 16384, -16384, -32768]
+    checks:
+      - desc: sin(0) = 0, sin(pi/2) = 32767 (no overflow), sin(-pi/2) = -32767, sin(-pi) = 0
+        expect: [0, 32767, -32767, 0]
+
+  - id: SIN-003
+    title: odd symmetry and range
+    requirement: EMATH-SIN-03
+    call: sin
+    stimuli:
+      angle: {range: [-32767, 32767]}
+    checks:
+      - desc: sin(-a) = -sin(a)
+        expect: -y[::-1]
+      - desc: output within [-32767, 32767]
+        min: -32767
+        max: 32767

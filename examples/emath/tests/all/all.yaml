@@ -1,0 +1,11 @@
+# Global suite: every emath suite in a single host library / target firmware
+suite: emath_all
+description: all emath tests in one firmware
+
+include:
+  - ../sin/sin.yaml
+  - ../mulq15/mulq15.yaml
+  - ../atan2/atan2.yaml
+  - ../pow/pow.yaml
+  - ../isqrt/isqrt.yaml
+  - ../rms/rms.yaml

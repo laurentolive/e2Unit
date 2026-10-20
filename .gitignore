@@ -1,0 +1,38 @@
+# Build outputs of every suite: generated code, libraries, firmware, reports, plots
+build/
+
+# Machine-specific tool paths (copy eunit.local.mk.example)
+eunit.local.mk
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+.venv/
+venv/
+.pytest_cache/
+
+# Stray build products outside build/
+*.o
+*.obj
+*.dll
+*.so
+*.elf
+*.hex
+*.bin
+*.map
+
+# Editors and OS
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Claude Code
+.claude/worktrees/
+.claude/settings.local.json

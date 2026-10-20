@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="300" viewBox="0 0 900 300" font-family="Segoe UI, Helvetica, Arial, sans-serif" role="img" aria-label="e2Unit principle: one specification, generated code, four ways to run">
+<title>e2Unit principle: one specification, generated code, four ways to run</title>
+<defs><marker id="a1971c2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="3.5" markerHeight="3.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1971c2"/></marker><marker id="ad9480f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="3.5" markerHeight="3.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#d9480f"/></marker><marker id="a2f9e44" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="3.5" markerHeight="3.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f9e44"/></marker><marker id="a5b6573" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="3.5" markerHeight="3.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b6573"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<rect x="20" y="40" width="230" height="200" rx="10" fill="#eef2f7" stroke="#3d4a5c" stroke-width="2"/>
+<text x="135.0" y="66" font-size="14" fill="#1d2430" text-anchor="middle" font-weight="700">Specification</text>
+<text x="38" y="98" font-size="12" fill="#1d2430" font-family="Consolas, Menlo, monospace">suite.yaml</text>
+<text x="38" y="122" font-size="12" fill="#1d2430">C prototype of the function</text>
+<text x="38" y="146" font-size="12" fill="#1d2430">stimuli (ranges, signals...)</text>
+<text x="38" y="170" font-size="12" fill="#1d2430">expected + tolerance</text>
+<text x="38" y="194" font-size="12" fill="#1d2430">traced requirement</text>
+<rect x="335" y="40" width="230" height="200" rx="10" fill="#eef2f7" stroke="#3d4a5c" stroke-width="2"/>
+<text x="450.0" y="66" font-size="14" fill="#1d2430" text-anchor="middle" font-weight="700">Generation + build</text>
+<text x="353" y="98" font-size="12" fill="#1d2430" font-family="Consolas, Menlo, monospace">eunit_suite.c` (adapters)</text>
+<text x="353" y="122" font-size="12" fill="#1d2430">+ your C sources</text>
+<text x="353" y="146" font-size="12" fill="#1d2430">gcc → PC library</text>
+<text x="353" y="170" font-size="12" fill="#1d2430">arm-gcc → .elf firmware</text>
+<rect x="650" y="40" width="230" height="200" rx="10" fill="#2b2f36" stroke="#2b2f36" stroke-width="2"/>
+<text x="765.0" y="66" font-size="14" fill="#ffffff" text-anchor="middle" font-weight="700">Execution</text>
+<text x="668" y="98" font-size="12" fill="#e9ecef">host: direct call (ctypes)</text>
+<text x="668" y="122" font-size="12" fill="#e9ecef">sim: target protocol, on PC</text>
+<text x="668" y="146" font-size="12" fill="#e9ecef">emu: emulated ARM firmware</text>
+<text x="668" y="170" font-size="12" fill="#e9ecef">jlink: board, over SWD</text>
+<text x="668" y="194" font-size="12" fill="#e9ecef">→ verdicts + reports</text>
+<polyline points="252,140 331,140" fill="none" stroke="#1971c2" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#a1971c2)"/>
+<rect x="251.1" y="105" width="80.8" height="18" rx="9" fill="#fff" stroke="#1971c2" stroke-width="1.5"/>
+<text x="291.5" y="119" font-size="11" fill="#1971c2" text-anchor="middle" font-weight="600">eunit gen</text>
+<polyline points="567,140 646,140" fill="none" stroke="#d9480f" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#ad9480f)"/>
+<rect x="584.1" y="105" width="44.8" height="18" rx="9" fill="#fff" stroke="#d9480f" stroke-width="1.5"/>
+<text x="606.5" y="119" font-size="11" fill="#d9480f" text-anchor="middle" font-weight="600">make</text>
+<text x="450" y="280" font-size="12" fill="#5b6573" text-anchor="middle">Same specification and checks everywhere; on target, every output is compared bit for bit with the PC.</text>
+</svg>

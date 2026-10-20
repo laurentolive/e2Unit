@@ -1,0 +1,13 @@
+#################################
+# Copy to eunit.local.mk (not versioned) and adapt to the machine.
+# Paths may contain spaces (they are quoted in the recipes).
+
+PY         := C:/Dev/Tools/Python312/python.exe
+HOST_CC    := C:/Dev/Tools/msys64/ucrt64/bin/gcc.exe
+ARM_PREFIX := C:/Dev/Tools/arm-none-eabi-gcc-9 2020-q2-update/bin/arm-none-eabi-
+
+# MSYS2 gcc needs its bin directory in PATH to find its own DLLs
+export PATH := C:/Dev/Tools/msys64/ucrt64/bin;$(PATH)
+
+# Default J-Link options (serial number, speed...)
+# JLINK_OPTS := --serial 123456789 --speed 12000

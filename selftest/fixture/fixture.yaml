@@ -1,0 +1,86 @@
+# Self test suite: each test documents the verdict e2Unit must produce
+suite: fixture
+build:
+  sources: [fixture.c]
+
+functions:
+  add:   "int32_t fx_add(int32_t a, int32_t b)"
+  clamp: "int16_t fx_clamp_bug(int16_t x)"
+  count: "uint32_t fx_count(void)"
+  scale: "float fx_scale(float x, float k)"
+  isneg: "bool fx_is_neg(int8_t x)"
+  inc:   "uint8_t fx_inc_u8(uint8_t x)"
+  hang:  "uint32_t fx_hang(uint32_t x)"
+  load:  "int32_t fx_load(uint32_t addr)"
+
+tests:
+  - id: PASS-ADD
+    call: add
+    combine: grid
+    stimuli: {a: {values: [-2147483648, -1, 0, 1, 2147483647]}, b: {range: [-3, 3]}}
+    checks: [{expect: "wrap(a + b, 'int32_t')"}]
+
+  - id: FAIL-CLAMP
+    call: clamp
+    stimuli: {x: {range: [-2000, 2000]}}
+    checks:
+      - {expect: "clip(x, -1000, 1000)"}
+      - {max: 1000}
+
+  - id: PASS-COUNT-1
+    call: count
+    stimuli: {}
+    checks: [{expect: 1}]
+
+  - id: PASS-COUNT-2
+    description: same as PASS-COUNT-1, proves static data is reset between tests
+    call: count
+    stimuli: {}
+    checks: [{expect: 1}]
+
+  - id: PASS-COUNT-NORESET
+    reset: false
+    call: count
+    stimuli: {}
+    checks: [{expect: 2}]
+
+  - id: PASS-FLOAT
+    call: scale
+    stimuli: {x: {linspace: [-10, 10, 101]}, k: 0.5}
+    checks: [{expect: "x * 0.5", tolerance: {rel: 1.0e-6}}]
+
+  - id: PASS-BOOL
+    call: isneg
+    stimuli: {x: {range: [-128, 127]}}
+    checks: [{expect: "x < 0"}]
+
+  - id: PASS-WRAP-U8
+    call: inc
+    stimuli: {x: {range: [0, 255]}}
+    checks: [{expect: "(x + 1) % 256"}]
+
+  - id: ERROR-RANGE
+    call: inc
+    stimuli: {x: [0, 256]}
+    checks: [{expect: 0}]
+
+  - id: ERROR-EXPR
+    call: inc
+    stimuli: {x: [0]}
+    checks: [{expect: "undefined_name + 1"}]
+
+  # target only (emu): a stuck function and a CPU fault, then recovery
+  - id: TGT-HANG
+    call: hang
+    stimuli: {x: [1]}
+    checks: [{expect: 0}]
+
+  - id: TGT-FAULT
+    call: load
+    stimuli: {addr: [0x70000000]}
+    checks: [{expect: 0}]
+
+  - id: TGT-RECOVER
+    call: add
+    stimuli: {a: 1, b: 2}
+    checks: [{expect: 3}]

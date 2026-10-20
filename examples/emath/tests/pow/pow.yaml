@@ -1,0 +1,53 @@
+# emath_pow - integer power saturated to int32
+suite: pow
+description: emath_pow exactness, saturation and limits
+
+build:
+  sources: [../../src/emath_pow.c]
+  includes: [../../src]
+  headers: [emath.h]
+
+models: [../emath_ref.py]
+
+functions:
+  pow:
+    prototype: "int32_t emath_pow(int32_t base, uint8_t exp)"
+    returns: p
+
+tests:
+  - id: POW-001
+    title: small bases, all useful exponents
+    requirement: EMATH-POW-01
+    call: pow
+    combine: grid
+    stimuli:
+      base: {range: [-50, 50]}
+      exp: {range: [0, 40]}
+    checks:
+      - desc: exact or saturated result
+        expect: pow_sat(base, exp)
+      - desc: execution time
+        cycles: {max: 300}
+
+  - id: POW-002
+    title: random bases and exponents
+    requirement: EMATH-POW-01
+    call: pow
+    stimuli:
+      base: {random: [-2147483648, 2147483647], n: 20000}
+      exp: {random: [0, 255], n: 20000}
+    checks:
+      - desc: exact or saturated result
+        expect: pow_sat(base, exp)
+
+  - id: POW-003
+    title: saturation limits
+    requirement: EMATH-POW-02
+    call: pow
+    stimuli:
+      base: [2, -2, -2, 2, 46340, 46341, -46341, 1290, 1291, 0, 0, 1, -1, -1, -2147483648, -2147483648, 2147483647]
+      exp:  [30, 31, 32, 31, 2, 2, 2, 3, 3, 0, 5, 255, 255, 254, 1, 2, 1]
+    checks:
+      - desc: values at and around the int32 limits
+        expect: [1073741824, -2147483648, 2147483647, 2147483647, 2147395600, 2147483647, 2147483647,
+                 2146689000, 2147483647, 1, 0, 1, -1, 1, -2147483648, 2147483647, 2147483647]

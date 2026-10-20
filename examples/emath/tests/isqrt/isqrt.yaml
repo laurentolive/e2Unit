@@ -1,0 +1,44 @@
+# emath_isqrt32 - floor(sqrt(x)) on 32 bits
+suite: isqrt
+description: emath_isqrt32 exactness
+
+build:
+  sources: [../../src/emath_isqrt.c]
+  includes: [../../src]
+  headers: [emath.h]
+
+functions:
+  isqrt:
+    prototype: "uint16_t emath_isqrt32(uint32_t x)"
+    returns: r
+
+tests:
+  - id: ISQRT-001
+    title: exhaustive on [0, 100000]
+    requirement: EMATH-ISQRT-01
+    call: isqrt
+    stimuli:
+      x: {range: [0, 100000]}
+    checks:
+      - expect: isqrt(x)
+
+  - id: ISQRT-002
+    title: every perfect square and its neighbours
+    requirement: EMATH-ISQRT-01
+    description: k^2 - 1, k^2 and k^2 + 1 for k = 1..65535
+    call: isqrt
+    stimuli:
+      x: {expr: "(i // 3 + 1) ** 2 + i % 3 - 1", n: 196605}
+    checks:
+      - expect: isqrt(x)
+
+  - id: ISQRT-003
+    title: random values over the full range
+    requirement: EMATH-ISQRT-01
+    call: isqrt
+    stimuli:
+      x: {random: [0, 4294967295], n: 200000}
+    checks:
+      - expect: isqrt(x)
+      - desc: execution time
+        cycles: {max: 600}

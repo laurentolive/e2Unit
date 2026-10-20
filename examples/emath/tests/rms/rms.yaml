@@ -1,0 +1,84 @@
+# emath_rms - sliding window RMS (stateful function: custom adapters keep the context)
+suite: rms
+description: emath_rms init, steady state, transients and full scale
+
+build:
+  sources: [../../src/emath_rms.c, ../../src/emath_isqrt.c, rms_adapter.c]
+  includes: [../../src]
+  headers: [emath.h]
+
+models: [../emath_ref.py]
+
+functions:
+  rms_init:
+    prototype: "bool rms_init(uint8_t log2n)"
+    custom: true
+    returns: ok
+  rms_update:
+    prototype: "uint16_t rms_update(int16_t x)"
+    custom: true
+    returns: rms
+
+tests:
+  - id: RMS-001
+    title: window size limited to 256 samples
+    requirement: EMATH-RMS-01
+    call: rms_init
+    stimuli:
+      log2n: {range: [0, 12]}
+    checks:
+      - desc: accepted if log2n <= 8
+        expect: log2n <= 8
+
+  - id: RMS-002
+    title: sine wave, 64 samples window
+    requirement: EMATH-RMS-02
+    setup:
+      - rms_init: [6]
+    call: rms_update
+    stimuli:
+      x: {segments: [{n: 1024, sine: {amp: 20000, period: 64}}]}
+    checks:
+      - desc: identical to the exact sliding window model
+        expect: rms_window(x, 6)
+      - desc: once the window is full, rms = 20000 / sqrt(2) within 2 LSB
+        window: [64, null]
+        expect: 20000 / sqrt(2)
+        tolerance: {abs: 2}
+      - desc: execution time
+        cycles: {max: 300}
+
+  - id: RMS-003
+    title: transients and full scale, 256 samples window
+    requirement: [EMATH-RMS-02, EMATH-RMS-03]
+    setup:
+      - rms_init: [8]
+    call: rms_update
+    stimuli:
+      x:
+        segments:
+          - {n: 300, dc: 0}
+          - {n: 600, dc: -32768}
+          - {n: 600, dc: 32767}
+          - {n: 600, square: {amp: 10000, period: 50}}
+          - {n: 1000, noise: 30000}
+    checks:
+      - desc: identical to the exact sliding window model
+        expect: rms_window(x, 8)
+      - desc: full scale negative input gives 32768 (no overflow)
+        window: [556, 900]
+        expect: 32768
+      - desc: never above full scale
+        max: 32768
+
+  - id: RMS-004
+    title: single sample window
+    requirement: EMATH-RMS-02
+    setup:
+      - rms_init: [0]
+    call: rms_update
+    stimuli:
+      x: {range: [-32768, 32767]}
+    checks:
+      - desc: rms = |x|
+        expect: abs(x)

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="310" viewBox="0 0 900 310" font-family="Segoe UI, Helvetica, Arial, sans-serif" role="img" aria-label="e2Unit protocol: the PC drops a batch of calls in the target RAM and reads the results back">
+<title>e2Unit protocol: the PC drops a batch of calls in the target RAM and reads the results back</title>
+<defs><marker id="a1971c2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="3.5" markerHeight="3.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1971c2"/></marker><marker id="ad9480f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="3.5" markerHeight="3.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#d9480f"/></marker><marker id="a2f9e44" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="3.5" markerHeight="3.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f9e44"/></marker><marker id="a5b6573" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="3.5" markerHeight="3.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b6573"/></marker></defs>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<rect x="30" y="40" width="270" height="210" rx="10" fill="#eef2f7" stroke="#3d4a5c" stroke-width="2"/>
+<text x="165.0" y="66" font-size="14" fill="#1d2430" text-anchor="middle" font-weight="700">PC — e2Unit</text>
+<text x="48" y="98" font-size="12" fill="#1d2430">1. writes the batch inputs</text>
+<text x="48" y="122" font-size="12" fill="#1d2430">   then req = seq + 1</text>
+<text x="48" y="146" font-size="12" fill="#1d2430">4. waits for ack = req</text>
+<text x="48" y="170" font-size="12" fill="#1d2430">   then reads the outputs</text>
+<text x="48" y="194" font-size="12" fill="#1d2430">   and the measured cycles</text>
+<rect x="600" y="40" width="270" height="210" rx="10" fill="#2b2f36" stroke="#2b2f36" stroke-width="2"/>
+<text x="735.0" y="66" font-size="14" fill="#ffffff" text-anchor="middle" font-weight="700">Microcontroller</text>
+<text x="618" y="98" font-size="12" fill="#e9ecef" font-family="Consolas, Menlo, monospace">eunit_mailbox` (RAM)</text>
+<text x="618" y="122" font-size="12" fill="#e9ecef">  magic · hash · req · ack</text>
+<text x="618" y="146" font-size="12" fill="#e9ecef">  buffer: inputs | outputs</text>
+<text x="618" y="170" font-size="12" fill="#e9ecef">2. eunit_poll() sees req ≠ ack</text>
+<text x="618" y="194" font-size="12" fill="#e9ecef">   calls the adapter N times</text>
+<text x="618" y="218" font-size="12" fill="#e9ecef">3. writes outputs, then ack</text>
+<polyline points="305,105 595,105" fill="none" stroke="#1971c2" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#a1971c2)"/>
+<rect x="398.8" y="80.0" width="102.4" height="18" rx="9" fill="#fff" stroke="#1971c2" stroke-width="1.5"/>
+<text x="450.0" y="94.0" font-size="11" fill="#1971c2" text-anchor="middle" font-weight="600">memory write</text>
+<polyline points="595,195 305,195" fill="none" stroke="#d9480f" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#ad9480f)"/>
+<rect x="402.4" y="170.0" width="95.2" height="18" rx="9" fill="#fff" stroke="#d9480f" stroke-width="1.5"/>
+<text x="450.0" y="184.0" font-size="11" fill="#d9480f" text-anchor="middle" font-weight="600">memory read</text>
+<text x="450" y="152" font-size="12" fill="#5b6573" text-anchor="middle" font-style="italic">J-Link probe · SWD (CPU running)</text>
+<text x="450" y="285" font-size="12" fill="#5b6573" text-anchor="middle">The firmware has no communication driver: only a loop watching the mailbox.</text>
+</svg>

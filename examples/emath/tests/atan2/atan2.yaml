@@ -1,0 +1,54 @@
+# emath_atan2 - angle of (x, y) as a binary angle (pi = 32768 = -32768)
+suite: atan2
+description: emath_atan2 accuracy over the plane and exact values on axes/diagonals
+
+build:
+  sources: [../../src/emath_atan2.c]
+  includes: [../../src]
+  headers: [emath.h]
+
+models: [../emath_ref.py]
+
+functions:
+  atan2:
+    prototype: "int16_t emath_atan2(int16_t y, int16_t x)"
+    returns: angle
+
+tests:
+  - id: ATAN2-001
+    title: accuracy on a 257 x 257 grid
+    requirement: EMATH-ATAN2-01
+    call: atan2
+    combine: grid
+    stimuli:
+      y: {linspace: [-32768, 32767, 257]}
+      x: {linspace: [-32768, 32767, 257]}
+    checks:
+      - desc: "|angle - atan2(y, x)| <= 1 LSB, modulo one turn"
+        expect: atan2_bin(y, x)
+        tolerance: {abs: 1, modulo: 65536}
+      - desc: execution time
+        cycles: {max: 400}
+
+  - id: ATAN2-002
+    title: accuracy on random points
+    requirement: EMATH-ATAN2-01
+    call: atan2
+    stimuli:
+      y: {random: [-32768, 32767], n: 100000}
+      x: {random: [-32768, 32767], n: 100000}
+    checks:
+      - desc: "|angle - atan2(y, x)| <= 1 LSB, modulo one turn"
+        expect: atan2_bin(y, x)
+        tolerance: {abs: 1, modulo: 65536}
+
+  - id: ATAN2-003
+    title: exact values on axes and diagonals
+    requirement: EMATH-ATAN2-02
+    call: atan2
+    stimuli:
+      y: [0, 1000, 0, -1000, 1000, -1000, -1000, 1000, 0, -32768, -32768]
+      x: [1000, 0, -1000, 0, 1000, 1000, -1000, -1000, 0, -32768, 0]
+    checks:
+      - desc: 0, pi/2, pi, -pi/2, diagonals, atan2(0, 0) = 0, extreme values
+        expect: [0, 16384, -32768, -16384, 8192, -8192, -24576, 24576, 0, -24576, -16384]
